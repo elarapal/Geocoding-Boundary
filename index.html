@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset=utf-8 />
-<title>Catchment Store Locator</title>
+<title>Store Locator - Within Border or Borderless</title>
 <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
 <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-pip/v0.0.2/leaflet-pip.js'></script>
 <script src='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.js'></script>
@@ -72,7 +72,7 @@ boundary.on('ready', function() {									//The bounday layer needs to be 'ready
 			    return (i < pipList.length ? boundaryList : pipList).indexOf(el) == -1;
 			});													//Return unmatched records from two arrays to obtain a list of boundary names not containing the point
 
-	        var locations = L.mapbox.featureLayer('elarapal.0g47p9oo').addTo(map).setFilter(	//Add location data that will be filtered on the fly
+	        var locations = L.mapbox.featureLayer('elarapal.0g47p9oo').setFilter(	//Add location data that will be filtered on the fly
 	            function (feature) {												//Display markers that DO NOT match the remove list.
 	                return (removeList.indexOf(feature.properties["UID"]) < 0); //The remove list is necessary because certain locations do not have boundaries.
 	            }   //As a result, simply reversing the condition to (pipList & >= 0) will select markers that matched the boundary. This will exclude markers that 
@@ -81,7 +81,6 @@ boundary.on('ready', function() {									//The bounday layer needs to be 'ready
 	        hospice = locations		//Saving the locations into a new layer (due to deletion issues)
 	        map.addLayer(hospice)	//Adding the new layer to the map document
 			
-
 			// function copied (with minor edits) from https://www.mapbox.com/mapbox.js/example/v1.0.0/reorder-listing-based-on-marker-proximity/
 	        function populateListing() {
 	            // Clear out the listing container first.
