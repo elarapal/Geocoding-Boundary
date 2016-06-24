@@ -4,9 +4,9 @@
 <meta charset=utf-8 />
 <title>Generic Title</title>
 <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
-//<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-pip/v0.0.2/leaflet-pip.js'></script>
-//<script src='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.js'></script>
-//<link href='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.css' rel='stylesheet' />
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-pip/v0.0.2/leaflet-pip.js'></script>
+<script src='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.js'></script>
+<link href='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.css' rel='stylesheet' />
 <style>
 	body { margin:0; padding:0; }
 	#map { position:absolute; top:0; bottom:0; width:100%; }
@@ -30,7 +30,7 @@
 L.mapbox.accessToken = 'pk.eyJ1IjoiZWxhcmFwYWwiLCJhIjoiY2lwYTVrYzJtMDAxb3Nubmp4NnNwMW95cyJ9.HiRwcboZw0UpnRUrwzxVAA';
 var map = L.mapbox.map('map', 'mapbox.light').setView([45.698920, -79.631074], 7);
 
-var boundary = L.mapbox.featureLayer('elarapal.0f97e00b')//.addTo(map)	//Add boundary file from MapBox Studio map saved onto account
+var boundary = L.mapbox.featureLayer('elarapal.0g484bim').addTo(map)	//Add boundary file from MapBox Studio map saved onto account
 
 var geocoderControl = L.mapbox.geocoderControl('mapbox.places', 		//mapbox.places is required..for a specific reason!
 	{
@@ -42,7 +42,7 @@ var geocoderControl = L.mapbox.geocoderControl('mapbox.places', 		//mapbox.place
 boundary.on('ready', function() {									//The bounday layer needs to be 'ready' prior to accessing its properties
   	boundaryList = []												//Empty list to hold each boundary names
   	for (i = 0; i < ((boundary.getGeoJSON()).features).length; i++){		
-  		boundaryList.push((boundary.getGeoJSON()).features[i].properties.title)
+  		boundaryList.push((boundary.getGeoJSON()).features[i].properties["UID"])
 	}																//For each boundary, save the title into the boundary list
 
 	geocoderControl.on('found', function(geoOut) {					//If a match is "found", run the event below
@@ -64,7 +64,7 @@ boundary.on('ready', function() {									//The bounday layer needs to be 'ready
 			var pip = leafletPip.pointInLayer([coordinates[0], coordinates[1]],boundary, false); //Tool to return all boundary objects if point falls inside them
 	        if (pip.length) {									//If the output PIP array is not empty (contains boundaries)...
 			    for (i = 0; i < pip.length; i++){				//...run a for loop to iterate through each spatial object to save each name in the empty list
-				    pipList.push(pip[i].feature.properties.title);
+				    pipList.push(pip[i].feature.properties["UID"]);
 				}
 	        } 
 
@@ -72,9 +72,9 @@ boundary.on('ready', function() {									//The bounday layer needs to be 'ready
 			    return (i < pipList.length ? boundaryList : pipList).indexOf(el) == -1;
 			});													//Return unmatched records from two arrays to obtain a list of boundary names not containing the point
 
-	        var locations = L.mapbox.featureLayer('elarapal.061o8kfo').setFilter(	//Add location data that will be filtered on the fly
+	        var locations = L.mapbox.featureLayer('elarapal.0g47p9oo').setFilter(	//Add location data that will be filtered on the fly
 	            function (feature) {												//Display markers that DO NOT match the remove list.
-	                return (removeList.indexOf(feature.properties["Feature"]) < 0); //The remove list is necessary because certain locations do not have boundaries.
+	                return (removeList.indexOf(feature.properties["UID"]) < 0); //The remove list is necessary because certain locations do not have boundaries.
 	            }   //As a result, simply reversing the condition to (pipList & >= 0) will select markers that matched the boundary. This will exclude markers that 
 	        );		//are borderless. The approach here is to filter out the unmatched boundaries. This will 
 
@@ -108,7 +108,7 @@ boundary.on('ready', function() {									//The bounday layer needs to be 'ready
 	                link.setAttribute('data-distance', distance_raw);
 
 	                // Populate content from each markers object.
-	                link.innerHTML = marker.feature.properties.title + '<br /><small>' + distance + ' ' + units +'</small>';
+	                link.innerHTML = marker.feature.properties["Loc_Name"] + '<br /><small>' + distance + ' ' + units +'</small>';
 
 	                link.onclick = function() {
 	                    if (/active/.test(this.className)) {
