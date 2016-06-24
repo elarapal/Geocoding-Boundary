@@ -89,7 +89,7 @@ boundary.on('ready', function() {									//The bounday layer needs to be 'ready
 
 	            // Build a listing of markers
 	            locations.eachLayer(function(marker) {
-	                // Draggable marker coordinates.
+
 	                var home = geocode.getLatLng();
 	                var distance_raw = (home.distanceTo(marker.getLatLng())).toFixed(0);
 	                if (distance_raw >= 1000) {
