@@ -1,7 +1,162 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta charset=utf-8 />
+<title>Generic Title</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-pip/v0.0.2/leaflet-pip.js'></script>
+<script src='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.js'></script>
+<link href='https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.css' rel='stylesheet' />
+<style>
+	body { margin:0; padding:0; }
+	#map { position:absolute; top:0; bottom:0; width:100%; }
+</style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+<style>
+	.info {background:#fff;position:absolute;width:250px;right:0px;max-height:98%;overflow:auto;}
+	.info .item {display:block;border-left:1px solid black;border-bottom:1px solid black;padding:10px;font: 15px arial, sans-serif;color: #0b3da9;text-decoration:none;}
+	.info .item small {color:#888;}
+	.info .item:hover,
+	.info .item.active {background:#f8f8f8;}
+	.leaflet-control-mapbox-geocoder{position:relative;left:0%}
+	.leaflet-control-mapbox-geocoder.active .leaflet-control-mapbox-geocoder-wrap{width:300px;opacity:1}
+	.leaflet-control-mapbox-geocoder .leaflet-control-mapbox-geocoder-form input{background:0 0;border:0;width:300px;padding:0 0 0 10px;height:26px;outline:0}
+	.leaflet-control-mapbox-geocoder-results{width:300px;position:absolute;left:-10026px;top:25px;border-radius:0 0 3px 3px}
+</style>
+<div id='map' class='map'></div>
+<div id='info' class='info'></div>
+<script>
+L.mapbox.accessToken = 'pk.eyJ1IjoiZWxhcmFwYWwiLCJhIjoiY2lwYTVrYzJtMDAxb3Nubmp4NnNwMW95cyJ9.HiRwcboZw0UpnRUrwzxVAA';
+var map = L.mapbox.map('map', 'mapbox.light').setView([45.698920, -79.631074], 7);
+
+var boundary = L.mapbox.featureLayer('elarapal.0f97e00b')//.addTo(map)	//Add boundary file from MapBox Studio map saved onto account
+
+var geocoderControl = L.mapbox.geocoderControl('mapbox.places', 		//mapbox.places is required..for a specific reason!
+	{
+		keepOpen: false, 												//Force geocoder search box opened
+		position: 'topleft'
+	}
+).addTo(map);
+
+boundary.on('ready', function() {									//The bounday layer needs to be 'ready' prior to accessing its properties
+  	boundaryList = []												//Empty list to hold each boundary names
+  	for (i = 0; i < ((boundary.getGeoJSON()).features).length; i++){		
+  		boundaryList.push((boundary.getGeoJSON()).features[i].properties.title)
+	}																//For each boundary, save the title into the boundary list
+
+	geocoderControl.on('found', function(geoOut) {					//If a match is "found", run the event below
+		matchAddress = geoOut.results.features[0].place_name;		//Saving the matched address from the geocoded point to a string
+		coordinates = geoOut.results.features[0].center;			//Saving the lat/long coordinates from the geocoded point as an array list
+	  	coordinates = coordinates.toString(coordinates).split(",");	//Splitting the coordinates into a list using a comma delimiter
+
+	  	try {							
+	  		map.removeLayer(geocode)    //If a geocode marker exists on the map, remove it.
+	  		map.removeLayer(hospice)    //If the hospice layer exists on the map, remove it.
+		} catch (e) {} 
+
+	  	pipList = []					//Empty list to hold each selected boundary name
+
+	  	if (matchAddress.indexOf("Ontario") !=-1) {				//If the matched address contains "Ontario"....
+	  		geocode = L.marker(new L.LatLng(coordinates[1], coordinates[0])).addTo(map);  //...add the geocoded marker.
+	  		map.setView([coordinates[1], coordinates[0]], 16);	//Position the view to the geocoded point with a different zoom level,
+
+			var pip = leafletPip.pointInLayer([coordinates[0], coordinates[1]],boundary, false); //Tool to return all boundary objects if point falls inside them
+	        if (pip.length) {									//If the output PIP array is not empty (contains boundaries)...
+			    for (i = 0; i < pip.length; i++){				//...run a for loop to iterate through each spatial object to save each name in the empty list
+				    pipList.push(pip[i].feature.properties.title);
+				}
+	        } 
+
+			var removeList = pipList.concat(boundaryList).filter(function(el, i) {
+			    return (i < pipList.length ? boundaryList : pipList).indexOf(el) == -1;
+			});													//Return unmatched records from two arrays to obtain a list of boundary names not containing the point
+
+	        var locations = L.mapbox.featureLayer('elarapal.061o8kfo').setFilter(	//Add location data that will be filtered on the fly
+	            function (feature) {												//Display markers that DO NOT match the remove list.
+	                return (removeList.indexOf(feature.properties["Feature"]) < 0); //The remove list is necessary because certain locations do not have boundaries.
+	            }   //As a result, simply reversing the condition to (pipList & >= 0) will select markers that matched the boundary. This will exclude markers that 
+	        );		//are borderless. The approach here is to filter out the unmatched boundaries. This will 
+
+	        hospice = locations		//Saving the locations into a new layer (due to deletion issues)
+	        map.addLayer(hospice)	//Adding the new layer to the map document
+			
+
+			// function copied (with minor edits) from https://www.mapbox.com/mapbox.js/example/v1.0.0/reorder-listing-based-on-marker-proximity/
+	        function populateListing() {
+	            // Clear out the listing container first.
+	            info.innerHTML = '';
+	            var listings = [];
+
+	            // Build a listing of markers
+	            locations.eachLayer(function(marker) {
+	                // Draggable marker coordinates.
+	                var home = geocode.getLatLng();
+	                var distance_raw = (home.distanceTo(marker.getLatLng())).toFixed(0);
+	                if (distance_raw >= 1000) {
+	                    var distance = ((home.distanceTo(marker.getLatLng()))/1000).toFixed(1);
+	                    var units = "Kilometres"
+	                }   
+	                else {
+	                    var distance = distance_raw
+	                    var units = "Meters"
+	                }
+	                
+	                var link = document.createElement('a');
+	                link.className = 'item';
+	                link.href = '#';
+	                link.setAttribute('data-distance', distance_raw);
+
+	                // Populate content from each markers object.
+	                link.innerHTML = marker.feature.properties.title + '<br /><small>' + distance + ' ' + units +'</small>';
+
+	                link.onclick = function() {
+	                    if (/active/.test(this.className)) {
+	                        this.className = this.className.replace(/active/, '').replace(/\s\s*$/, '');
+	                    } else {
+	                        var siblings = info.getElementsByTagName('a');
+	                        for (var i = 0; i < siblings.length; i++) {
+	                            siblings[i].className = siblings[i].className
+	                            .replace(/active/, '').replace(/\s\s*$/, '');
+	                        };
+	                        this.className += ' active';
+
+	                        // When a menu item is clicked, animate the map to center
+	                        // its associated marker and open its popup.
+	                        map.panTo(marker.getLatLng());
+	                        marker.openPopup();
+	                    }
+	                    return false;
+	                };
+	                listings.push(link);
+	            });
+
+	            // Sort the listing based on the
+	            // assigned attribute, 'data-listing'
+	            listings.sort(function(a, b) {
+	                return a.getAttribute('data-distance') - b.getAttribute('data-distance');
+	            });
+
+	            var arrayLength = listings.length;
+	            for (var i = 0; i < arrayLength; i++) {
+	                j = i+1;
+	                listings[i].firstChild.data = j + " - "+ listings[i].firstChild.data;
+	            }
+
+	            listings.forEach(function(listing) {
+	                info.appendChild(listing);
+	            });
+	        }
+	        populateListing();									//Run the populateListing() function
+			locations.on('ready', populateListing); 			//Populate the list when the location layer is ready
+	    }
+	  	else {
+	  		alert("'" + matchAddress + "', did not match any specific feature in Ontario, Canada. Please retype the address and try again.");
+	  	}
+	});
+
+});
+
+</script>
 </body>
 </html>
