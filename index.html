@@ -30,56 +30,56 @@
 L.mapbox.accessToken = 'pk.eyJ1IjoiZWxhcmFwYWwiLCJhIjoiY2lwYTVrYzJtMDAxb3Nubmp4NnNwMW95cyJ9.HiRwcboZw0UpnRUrwzxVAA';
 var map = L.mapbox.map('map', 'mapbox.light').setView([45.698920, -79.631074], 7);
 
-var boundary = L.mapbox.featureLayer('elarapal.0g484bim').addTo(map)	//Add boundary file from MapBox Studio map saved onto account
+var boundary = L.mapbox.featureLayer('elarapal.0g484bim').addTo(map)
 
-var geocoderControl = L.mapbox.geocoderControl('mapbox.places', 		//mapbox.places is required..for a specific reason!
+var geocoderControl = L.mapbox.geocoderControl('mapbox.places', 
 	{
-		keepOpen: false, 												//Force geocoder search box opened
+		keepOpen: false, 
 		position: 'topleft'
 	}
 ).addTo(map);
 
-boundary.on('ready', function() {									//The bounday layer needs to be 'ready' prior to accessing its properties
-  	boundaryList = []												//Empty list to hold each boundary names
+boundary.on('ready', function() {
+  	boundaryList = []	
   	for (i = 0; i < ((boundary.getGeoJSON()).features).length; i++){		
   		boundaryList.push((boundary.getGeoJSON()).features[i].properties["UID"])
-	}																//For each boundary, save the title into the boundary list
+	}
 
-	geocoderControl.on('found', function(geoOut) {					//If a match is "found", run the event below
-		matchAddress = geoOut.results.features[0].place_name;		//Saving the matched address from the geocoded point to a string
-		coordinates = geoOut.results.features[0].center;			//Saving the lat/long coordinates from the geocoded point as an array list
-	  	coordinates = coordinates.toString(coordinates).split(",");	//Splitting the coordinates into a list using a comma delimiter
+	geocoderControl.on('found', function(geoOut) {
+		matchAddress = geoOut.results.features[0].place_name;
+		coordinates = geoOut.results.features[0].center;
+	  	coordinates = coordinates.toString(coordinates).split(",");
 
 	  	try {							
-	  		map.removeLayer(geocode)    //If a geocode marker exists on the map, remove it.
-	  		map.removeLayer(hospice)    //If the hospice layer exists on the map, remove it.
+	  		map.removeLayer(geocode)
+	  		map.removeLayer(hospice)
 		} catch (e) {} 
 
-	  	pipList = []					//Empty list to hold each selected boundary name
+	  	pipList = []
 
-	  	if (matchAddress.indexOf("Ontario") !=-1) {				//If the matched address contains "Ontario"....
-	  		geocode = L.marker(new L.LatLng(coordinates[1], coordinates[0])).addTo(map);  //...add the geocoded marker.
-	  		map.setView([coordinates[1], coordinates[0]], 16);	//Position the view to the geocoded point with a different zoom level,
+	  	if (matchAddress.indexOf("Ontario") !=-1) {
+	  		geocode = L.marker(new L.LatLng(coordinates[1], coordinates[0])).addTo(map);
+	  		map.setView([coordinates[1], coordinates[0]], 16);
 
-			var pip = leafletPip.pointInLayer([coordinates[0], coordinates[1]],boundary, false); //Tool to return all boundary objects if point falls inside them
-	        if (pip.length) {									//If the output PIP array is not empty (contains boundaries)...
-			    for (i = 0; i < pip.length; i++){				//...run a for loop to iterate through each spatial object to save each name in the empty list
+			var pip = leafletPip.pointInLayer([coordinates[0], coordinates[1]],boundary, false); 
+	        if (pip.length) {			
+			    for (i = 0; i < pip.length; i++){
 				    pipList.push(pip[i].feature.properties["UID"]);
 				}
 	        } 
 
 			var removeList = pipList.concat(boundaryList).filter(function(el, i) {
 			    return (i < pipList.length ? boundaryList : pipList).indexOf(el) == -1;
-			});													//Return unmatched records from two arrays to obtain a list of boundary names not containing the point
+			});													
 
-	        var locations = L.mapbox.featureLayer('elarapal.0g47p9oo').setFilter(	//Add location data that will be filtered on the fly
-	            function (feature) {												//Display markers that DO NOT match the remove list.
-	                return (removeList.indexOf(feature.properties["UID"]) < 0); //The remove list is necessary because certain locations do not have boundaries.
-	            }   //As a result, simply reversing the condition to (pipList & >= 0) will select markers that matched the boundary. This will exclude markers that 
-	        );		//are borderless. The approach here is to filter out the unmatched boundaries. This will 
+	        var locations = L.mapbox.featureLayer('elarapal.0g47p9oo').setFilter(
+	            function (feature) {								
+	                return (removeList.indexOf(feature.properties["UID"]) < 0); 
+	            }    
+	        );		
 
-	        hospice = locations		//Saving the locations into a new layer (due to deletion issues)
-	        map.addLayer(hospice)	//Adding the new layer to the map document
+	        hospice = locations		
+	        map.addLayer(hospice)	
 			
 			// function copied (with minor edits) from https://www.mapbox.com/mapbox.js/example/v1.0.0/reorder-listing-based-on-marker-proximity/
 	        function populateListing() {
